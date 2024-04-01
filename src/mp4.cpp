@@ -18,6 +18,7 @@
 
 														*/
 
+#include "common.h"
 #include <assert.h>
 #include <string>
 #include <iostream>
@@ -90,6 +91,9 @@ void Mp4::parseHealthy() {
 	if (twos_track_idx_ >= 0 && hasCodec("avc1")) {
 		getTrack("avc1").codec_.chk_for_twos_ = true;
 	}
+
+	if(!g_unknown_codec.empty() && !hasCodec(g_unknown_codec))
+		throw ss("Track with codec ", g_unknown_codec, " not found. Check -unkc value.");
 
 	if (g_log_mode >= LogMode::I) cout << '\n';
 }
@@ -1828,6 +1832,41 @@ void Mp4::onFirstChunkFound(int track_idx) {
 		logg(W, "different start chunk: ", track_idx, " instead of ", track_order_simple_[0], "\n");
 }
 
+void Mp4::processMatch(const off_t& offset, FrameInfo& match) {
+	auto& t = tracks_[match.track_idx_];
+
+	if (!first_chunk_found_) onFirstChunkFound(match.track_idx_);
+
+	bool start_new_chunk = false;
+	if (last_track_idx_ != match.track_idx_)
+		start_new_chunk = true;
+
+	if (t.has_duplicates_ && t.chunkReachedSampleLimit())
+		start_new_chunk = true;
+
+	// chunk contains X amount of frames back-to-back
+	// start a new chunk if there is padding between the frames
+	if(t.current_chunk_.n_samples_ > 0 && t.current_chunk_.off_ + t.current_chunk_.size_ != offset)
+		start_new_chunk = true;
+
+	if(start_new_chunk) {
+		if (match.track_idx_ != idx_free_) chunk_idx_++;
+		pushBackLastChunk();
+		t.current_chunk_.off_ = offset;
+		t.current_chunk_.already_excluded_ = current_mdat_->total_excluded_yet_;
+	}
+
+	addFrame(match);
+
+	t.current_chunk_.n_samples_++;
+	t.current_chunk_.size_ += match.length_;
+
+	logg(V, t.current_chunk_.n_samples_, "th sample in ", t.chunks_.size()+1, "th ", t.codec_.name_, "-chunk\n");
+	last_track_idx_ = match.track_idx_;
+
+	pkt_idx_++;
+}
+
 bool Mp4::tryMatch(off_t& offset) {
 	FrameInfo match = getMatch(offset);
 	if (match) {
@@ -1836,33 +1875,26 @@ bool Mp4::tryMatch(off_t& offset) {
 		if (use_offset_map_) chkFrameDetectionAt(match, offset);
 
 		if (unknown_length_) {
+			// handle unknown frame (-unkc, -unkp)
+			if(!g_unknown_codec.empty() && unknown_length_ > g_unknown_padding) {
+				int unk_track_idx = getTrackIdx2(g_unknown_codec);
+				auto unk_offset = offset - unknown_length_;
+				logg(W, "adding ", unknown_length_, " bytes to ", g_unknown_codec, " track\n");
+				auto m2 = FrameInfo(unk_track_idx, tracks_[unk_track_idx].codec_, unk_offset, unknown_length_ - g_unknown_padding);
+				if (use_offset_map_) chkFrameDetectionAt(m2, unk_offset);
+				processMatch(unk_offset, m2);
+				unknown_length_ = 0;
+			}
+
 			noteUnknownSequence(offset);
 			logg(V, "found healthy packet again: ", match, "\n");
 			correctChunkIdx(match.track_idx_);
 			disableNoiseBuffer();
 		}
 
-		if (!first_chunk_found_) onFirstChunkFound(match.track_idx_);
-		if (last_track_idx_ != match.track_idx_) {
-			if (match.track_idx_ != idx_free_) chunk_idx_++;
-			pushBackLastChunk();
-			t.current_chunk_.off_ = offset;
-			t.current_chunk_.already_excluded_ = current_mdat_->total_excluded_yet_;
-		}
+		processMatch(offset, match);
 
-		if (t.has_duplicates_ && t.chunkReachedSampleLimit()) {
-			pushBackLastChunk(); chunk_idx_++;
-		}
-
-		addFrame(match);
-
-		t.current_chunk_.n_samples_++;
-		logg(V, t.current_chunk_.n_samples_, "th sample in ", t.chunks_.size()+1, "th ", t.codec_.name_, "-chunk\n");
-		last_track_idx_ = match.track_idx_;
-		offset += match.length_;
-
-		pkt_idx_++;
-
+		offset += match.length_ + g_padding;
 
 		return true;
 	}

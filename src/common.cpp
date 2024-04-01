@@ -55,6 +55,9 @@ void (*g_onStatus)(const string&) = nullptr;
 int64_t g_range_start = kRangeUnset;
 int64_t g_range_end = kRangeUnset;
 std::string g_dst_path;
+std::string g_unknown_codec;
+uint g_unknown_padding = 0;
+uint g_padding = 0;
 
 std::stringstream noise_buffer;
 std::streambuf *orig_cout, *orig_cerr;

@@ -50,6 +50,9 @@ void usage() {
 	     << "-skip  - skip existing\n"
 	     << "-noctts  - dont restore ctts\n"
 	     << "-mp <bytes>  - set max partsize\n"
+	     << "-unkc <codec>  - assume unknown frames are actually <codec>\n"
+	     << "-unkp <bytes> - set unknown track padding\n"
+	     << "-padd <bytes> - set global track padding (bytes to skip after each frame)\n"
 	     << "\n"
 	     << "analyze options:\n"
 	     << "-a  - analyze\n"
@@ -109,6 +112,9 @@ int main(int argc, char *argv[]) {
 	int arg_range = -1;
 	int arg_dst = -1;
 	int arg_mp = -1;
+	int arg_unkc = -1;
+	int arg_unkp = -1;
+	int arg_padd = -1;
 
 	argv_as_utf8(argc, argv);
 
@@ -120,6 +126,9 @@ int main(int argc, char *argv[]) {
 		if (arg_range == kExpectArg) {parseRange(arg); arg_range = -1; continue;}
 		if (arg_dst == kExpectArg) {g_dst_path = arg; arg_dst = -1; continue;}
 		if (arg_mp == kExpectArg) {parseMaxPartsize(arg); arg_mp = -1; continue;}
+		if (arg_unkc == kExpectArg) {g_unknown_codec = arg; arg_unkc = -1; continue;}
+		if (arg_unkp == kExpectArg) {g_unknown_padding = stoi(arg); arg_unkp = -1; continue;}
+		if (arg_padd == kExpectArg) {g_padding = stoi(arg); arg_padd = -1; continue;}
 		if (arg == "--version") printVersion();
 		if (arg[0] == '-') {
 			auto a = arg.substr(1);
@@ -157,6 +166,9 @@ int main(int argc, char *argv[]) {
 			else if (a == "dst") arg_dst = kExpectArg;
 			else if (a == "skip") g_skip_existing = true;
 			else if (a == "mp") arg_mp = kExpectArg;
+			else if (a == "unkc") arg_unkc = kExpectArg;
+			else if (a == "unkp") arg_unkp = kExpectArg;
+			else if (a == "padd") arg_padd = kExpectArg;
 			else if (arg.size() > 2) {cerr << "Error: seperate multiple options with space! See '-h'\n";  return -1;}
 			else usage();
 		}
