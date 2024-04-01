@@ -1054,13 +1054,13 @@ BufferedAtom* Mp4::findMdat(FileRead& file_read) {
 	current_mdat_ = new BufferedAtom(file_read);
 	auto& mdat = *current_mdat_;
 
+	if (g_range_start != kRangeUnset)
+		return mdatFromRange(file_read, mdat);
+
 	if (file_read.filename_ == filename_ok_) {
 		Atom* p = root_atom_->atomByName("mdat", true);
 		if (p) mdat.Atom::operator=(*p);
 	}
-
-	else if (g_range_start != kRangeUnset)
-		return mdatFromRange(file_read, mdat);
 
 	if (!isPointingAtAtom(file_read)) {
 		logg(W, "no mp4-structure found in: '", file_read.filename_, "'\n");
