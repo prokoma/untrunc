@@ -71,8 +71,9 @@ void Mp4::parseHealthy() {
 
 	// reduce false positives when matching
 	map<string, int> certainty = {
-	    {"gpmd", 4},
-	    {"fdsc", 3},
+	    {"gpmd", 5},
+	    {"fdsc", 4},
+	    {"hvc1", 3},
 	    {"mp4a", 2},
 	    {"avc1", 1},
 	    // default is 0

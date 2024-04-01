@@ -31,7 +31,11 @@ int getSizeHvc1(Codec* self, const uchar* start, uint maxlength) {
 		if (h265IsSlice(nal_info.nal_type_)) {
 			H265SliceInfo slice_info(nal_info);
 			if (previous_nal.is_ok) {
-				if (slice_info.isInNewFrame()) return length;
+				if (
+					slice_info.isInNewFrame()
+					// GoPro Hero 10 puts AUD at the start of a frame
+					&& previous_nal.nal_type_ != NAL_AUD
+				) return length;
 				if (previous_nal.nuh_layer_id_ != nal_info.nuh_layer_id_){
 					logg(W, "Different nuh_layer_id_ idc\n");
 					return length;

@@ -117,7 +117,8 @@ map<string, bool(*) (Codec*, const uchar*, uint)> dispatch_strict_match {
 	}},
     MATCH_FN("hvc1") {
 		if (start[0] != 0x00 || start[5] != 0x01) return false;
-		if (start[4] != 0x02 && start[4] != 0x26 && start[4] != 0x00) return false;
+		if (start[3] != 0x03) return false; // GoPro Hero 10
+		if (start[4] != 0x02 && start[4] != 0x26 && start[4] != 0x00 && start[4] != 0x46) return false;
 		return true;
 	}},
 	MATCH_FN("fdsc") {
