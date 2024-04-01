@@ -555,22 +555,48 @@ void Mp4::chkUntrunc(FrameInfo& fi, Codec& c, int i) {
 	start = loadFragment(offset);
 
 	bool ok = true;
-	bool matches = false;
-	for (auto& t : tracks_)
-		if (t.codec_.matchSample(start)){
-			if (t.codec_.name_ != c.name_){
-				cout << "Matched wrong codec! '" << t.codec_.name_ << "' instead of '" << c.name_ << "'\n";
-				ok = false;
-			} else {matches = true; break;}
+
+	if(c.name_ != "tmcd") { // tmcd is hardcoded in Mp4::getMatch
+		bool matches = false;
+		for (auto& t : tracks_) {
+			if (t.codec_.matchSample(start)) {
+				if (t.codec_.name_ != c.name_) {
+					cout << "Non-strict matched wrong codec! '" << t.codec_.name_ << "' instead of '" << c.name_ << "'\n";
+					ok = false;
+				} else {
+					matches = true;
+					break;
+				}
+			}
 		}
+		if(!matches) {
+			cout << "Non-strict match failed! '" << c.name_ << "' itself not detected\n";
+			ok = false;
+		}
+
+		if(c.name_ != "mp4a") { // mp4a strict match always returns false (not implemented)
+			bool strictMatches = false;
+			for (auto& t : tracks_) {
+				if (t.codec_.matchSampleStrict(start)) {
+					if (t.codec_.name_ != c.name_) {
+						cout << "Strict matched wrong codec! '" << t.codec_.name_ << "' instead of '" << c.name_ << "'\n";
+						ok = false;
+					} else {
+						strictMatches = true;
+						break;
+					}
+				}
+			}
+			if(!strictMatches) {
+				cout << "Strict match failed! '" << c.name_ << "' itself not detected\n";
+				ok = false;
+			}
+		}
+	}
+
 	uint size = c.getSize(start, current_maxlength_, offset);
 	uint duration = c.audio_duration_;
 	//TODO check if duration is working with the stts duration.
-
-	if(!matches) {
-		cout << "Match failed! '" << c.name_ << "' itself not detected\n";
-		ok = false;
-	}
 
 	cout << "detected size: " << size << " true: " << fi.length_;
 	if (size != fi.length_) cout << "  <- WRONG";
