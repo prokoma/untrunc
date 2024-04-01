@@ -215,7 +215,10 @@ int main(int argc, char *argv[]) {
 		else if (show_stats) mp4.printDynStats();
 		else if (show_info) mp4.printMediaInfo();
 		else if (dump_samples) mp4.dumpSamples();
-		else if (analyze) mp4.analyze();
+		else if (analyze) {
+			mp4.analyze(true);
+			mp4.analyze();
+		}
 		else if (analyze_offset) mp4.analyzeOffset(corrupt.empty() ? ok : corrupt, arg_offset);
 		else if (corrupt.size()) mp4.repair(corrupt);
 	}
