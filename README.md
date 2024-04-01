@@ -1,6 +1,25 @@
 Untrunc
 =======
 
+Modified version of `untrunc` with added support for GoPro Hero 10 HEVC footage.
+
+Usage:
+
+```bash
+make FF_VER=3.3.9 -j$(nproc)
+./untrunc -unkc mp4a -unkp 16 -padd 16 -s -n -range 1056: path/to/working/video.MP4 path/to/corrupted/video.MP4
+```
+
+* fixed HEVC matching
+* fixed bug which saved frames with incorrect offset
+* added `-unkc` and `-unkp` arguments, which tell the program to treat unknown data as a specific codec
+	* this was necessary, because ffmpeg decoding of corrupted mp4a doesn't work for some reason, ffmpeg probably keeps some internal state
+	* we can decode everything else perfectly and treat the unknown data as mp4a
+* added `-padd` to manually set track padding (it is 16 for all tracks in case of my GoPro)
+	* this can be verified with `-a`
+
+## Original README
+
 Restore a damaged (truncated) mp4, m4v, mov, 3gp video. Provided you have a similar not broken video. And some luck.
 
 You need:
